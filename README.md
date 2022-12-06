@@ -1,4 +1,4 @@
 # cs231n-assignment
-It's my solution for **cs231n-2022**.
+Solutions to **cs231n-2022**. You can find the assignments in https://cs231n.github.io/
 ## assignment1 
 
