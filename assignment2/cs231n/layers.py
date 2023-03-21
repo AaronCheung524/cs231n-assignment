@@ -168,8 +168,8 @@ def batchnorm_forward(x, gamma, beta, bn_param):
     At each timestep we update the running averages for mean and variance using
     an exponential decay based on the momentum parameter:
 
-    running_mean = momentum * running_mean + (1 - momentum) * sample_mean
-    running_var = momentum * running_var + (1 - momentum) * sample_var
+    running_mean = momentum * running_mean + (1 - momentum) * mean
+    running_var = momentum * running_var + (1 - momentum) * var
 
     Note that the batch normalization paper suggests a different test-time
     behavior: they compute sample mean and variance for each feature using a
@@ -226,7 +226,16 @@ def batchnorm_forward(x, gamma, beta, bn_param):
         #######################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        batch_mean = np.mean(x, axis=0)
+        batch_var = np.var(x, axis=0)
+        x_hat = (x - batch_mean) / np.sqrt(batch_var + eps)
+
+        out = gamma * x_hat + beta
+
+        cache = (gamma, x, batch_mean, batch_var, eps, x_hat)
+
+        running_mean = momentum * running_mean + (1 - momentum) * batch_mean
+        running_var = momentum * running_var + (1 - momentum) * batch_var
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         #######################################################################
@@ -241,7 +250,8 @@ def batchnorm_forward(x, gamma, beta, bn_param):
         #######################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        x_hat = (x - running_mean) / (np.sqrt(running_var + eps))
+        out = gamma * x_hat + beta
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         #######################################################################
@@ -282,7 +292,26 @@ def batchnorm_backward(dout, cache):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    gamma, x, mean, var, eps, x_hat = cache
+    N = x.shape[0]
+
+
+
+    dbeta = np.sum(dout, axis=0)
+    dgamma = np.sum(x_hat * dout, axis=0)
+
+    dx_1 = gamma * dout
+    dx_2_b = np.sum((x - mean) * dx_1, axis=0)
+    dx_2_a = ((var + eps) ** (-0.5)) * dx_1
+    dx_3_b = (-1) / ((var + eps)) * dx_2_b
+    dx_4_b = 0.5 / np.sqrt(var + eps) * dx_3_b
+    dx_5_b = np.ones_like(x) / N * dx_4_b
+    dx_6_b = 2 * (x - mean) * dx_5_b
+    dx_7_a = dx_6_b * 1 + dx_2_a * 1
+    dx_7_b = dx_6_b * 1 + dx_2_a * 1
+    dx_8_b = (-1) * np.sum(dx_7_b, axis=0)
+    dx_9_b = np.ones_like(x) / N * dx_8_b
+    dx = dx_9_b + dx_7_a
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -316,7 +345,18 @@ def batchnorm_backward_alt(dout, cache):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    gamma, x, mean, var, eps, x_hat = cache
+    N = x.shape[0]
+
+
+    dgamma = np.sum(x_hat * dout, axis=0)
+    dbeta = np.sum(dout, axis=0)
+
+    dx_hat = gamma * dout
+    dvar = np.sum((dx_hat * (x - mean) * (-0.5) * ((var + eps) ** (-1.5))), axis=0)  # (D,)
+    dmean = np.sum(dx_hat * (-1) * ((var + eps) ** (-0.5)), axis=0)
+    dmean += dvar * np.sum(-2 * (x - mean), axis=0) / N
+    dx = dx_hat * ((var + eps) ** (-0.5)) + dvar * 2 * (x - mean) / N + dmean / N
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -361,7 +401,13 @@ def layernorm_forward(x, gamma, beta, ln_param):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    batch_mean = np.mean(x, axis=0)
+    batch_var = np.var(x, axis=0)
+    x_hat = (x - batch_mean) / np.sqrt(batch_var + eps)
+
+    out = gamma * x_hat + beta
+
+    cache = (gamma, x, batch_mean, batch_var, eps, x_hat)
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################

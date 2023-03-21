@@ -169,7 +169,13 @@ class FullyConnectedNet(object):
                                                                     self.params['gamma%d' % (layer + 1)],
                                                                     self.params['beta%d' % (layer + 1)],
                                                                     self.bn_params[layer])
-
+            elif self.normalization == "layernorm":
+                layer_input, cache[layer] = affine_ln_relu_forward(layer_input,
+                                                                   self.params['W%d' % (layer + 1)],
+                                                                   self.params['b%d' % (layer + 1)],
+                                                                   self.params['gamma%d' % (layer + 1)],
+                                                                   self.params['beta%d' % (layer + 1)],
+                                                                   self.bn_params[layer])
             else:
                 layer_input, cache[layer] = affine_relu_forward(layer_input, self.params['W%d' % (layer + 1)],
                                                                  self.params['b%d' % (layer + 1)])
@@ -221,11 +227,13 @@ class FullyConnectedNet(object):
                 dhout = dropout_backward(dhout, dropout_cache[lay])
             if self.normalization == 'batchnorm':
                 dx, dw, db, dgamma, dbeta = affine_bn_relu_backward(dhout, cache[lay])
+            elif self.normalization == 'layernorm':
+                dx, dw, db, dgamma, dbeta = affine_ln_relu_backward(dhout, cache[lay])
             else:
                 dx, dw, db = affine_relu_backward(dhout, cache[lay])
             grads['W%d' % (lay + 1)] = dw + self.reg * self.params['W%d' % (lay + 1)]
             grads['b%d' % (lay + 1)] = db
-            if self.normalization == 'batchnorm':
+            if self.normalization == 'batchnorm' or 'layernorm':
                 grads['gamma%d' % (lay + 1)] = dgamma
                 grads['beta%d' % (lay + 1)] = dbeta
             dhout = dx
