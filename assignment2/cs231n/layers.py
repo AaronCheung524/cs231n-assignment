@@ -401,13 +401,13 @@ def layernorm_forward(x, gamma, beta, ln_param):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    batch_mean = np.mean(x, axis=0)
-    batch_var = np.var(x, axis=0)
-    x_hat = (x - batch_mean) / np.sqrt(batch_var + eps)
+    layer_mean = np.mean(x, axis=1).reshape(x.shape[0], 1)
+    layer_var = np.var(x, axis=1).reshape(x.shape[0], 1)
+    x_hat = (x - layer_mean) / np.sqrt(layer_var + eps)
 
     out = gamma * x_hat + beta
 
-    cache = (gamma, x, batch_mean, batch_var, eps, x_hat)
+    cache = (gamma, x, layer_mean, layer_var, eps, x_hat)
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -440,8 +440,17 @@ def layernorm_backward(dout, cache):
     # still apply!                                                            #
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
+    gamma, x, mean, var, eps, x_hat = cache
+    N, D= x.shape
 
-    pass
+    dgamma = np.sum(x_hat * dout, axis=0, keepdims=True)
+    dbeta = np.sum(dout, axis=0, keepdims=True)
+
+    dx_hat = gamma * dout
+    dvar = np.sum((dx_hat * (x - mean) * (-0.5) * ((var + eps) ** (-1.5))), axis=1, keepdims=True)
+    dmean = np.sum(dx_hat * (-1) * ((var + eps) ** (-0.5)), axis=1, keepdims=True)
+    dmean += dvar * np.sum(-2 * (x - mean), axis=1, keepdims=True) / D
+    dx = dx_hat * ((var + eps) ** (-0.5)) + dvar * 2 * (x - mean) / D + dmean / D
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################

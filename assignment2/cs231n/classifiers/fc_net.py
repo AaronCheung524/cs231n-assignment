@@ -80,6 +80,9 @@ class FullyConnectedNet(object):
             if self.normalization == "batchnorm":
                 self.params['gamma%d' % (i+1)] = np.ones(hidden_dims[i])
                 self.params['beta%d' % (i+1)] = np.zeros(hidden_dims[i])
+            elif self.normalization == "layernorm":
+                self.params['gamma%d' % (i+1)] = np.ones(hidden_dims[i])
+                self.params['beta%d' % (i+1)] = np.zeros(hidden_dims[i])
             layer_input_dim = hidden_dims[i]
         self.params['W%d' % self.num_layers] = weight_scale * np.random.randn(layer_input_dim, num_classes)
         self.params['b%d' % self.num_layers] = weight_scale * np.zeros(num_classes)
@@ -233,7 +236,7 @@ class FullyConnectedNet(object):
                 dx, dw, db = affine_relu_backward(dhout, cache[lay])
             grads['W%d' % (lay + 1)] = dw + self.reg * self.params['W%d' % (lay + 1)]
             grads['b%d' % (lay + 1)] = db
-            if self.normalization == 'batchnorm' or 'layernorm':
+            if self.normalization == 'batchnorm' or (self.normalization == 'layernorm'):
                 grads['gamma%d' % (lay + 1)] = dgamma
                 grads['beta%d' % (lay + 1)] = dbeta
             dhout = dx
